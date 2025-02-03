@@ -1,49 +1,16 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Character } from "../generated/graphql";
-
-const API_URL = "https://rickandmortyapi.com/graphql";
+import { useCharacters } from "../hooks/useCharacters";
 
 function CharacterList() {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(true);
-
-  useEffect(() => {
-    const fetchCharacters = async () => {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetCharacters($page: Int!) {
-              characters(page: $page) {
-                info {
-                  next
-                }
-                results {
-                  id
-                  name
-                  image
-                }
-              }
-            }
-          `,
-          variables: { page },
-        }),
-      });
-
-      const { data } = await response.json();
-      setCharacters(data.characters.results);
-      setHasNextPage(!!data.characters.info.next);
-    };
-
-    fetchCharacters();
-  }, [page]);
+  const { characters, hasNextPage, nextPage, loading, error } = useCharacters();
 
   return (
     <div>
       <h1>Rick & Morty Characters</h1>
+
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
         {characters?.map((char) => (
           <Link key={char?.id} to={`/character/${char?.id}`} style={{ textDecoration: "none", color: "black" }}>
@@ -54,7 +21,10 @@ function CharacterList() {
           </Link>
         ))}
       </div>
-      {hasNextPage && <button onClick={() => setPage((prev) => prev + 1)}>Next Page</button>}
+
+      {hasNextPage && !loading && (
+        <button onClick={nextPage}>Next Page</button>
+      )}
     </div>
   );
 }
